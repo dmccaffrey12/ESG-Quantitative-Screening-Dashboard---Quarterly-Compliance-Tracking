@@ -270,10 +270,6 @@ if uploaded_files:
                     try:
                         from report_generator import generate_compliance_report
                         
-                with col2:
-                    try:
-                        from report_generator import generate_compliance_report
-                        
                         if st.button("📄 Generate Compliance Report (PDF)"):
                             # Pass portfolio_df to report generator if available
                             portfolio_data = None
@@ -301,6 +297,7 @@ if uploaded_files:
                         st.info("Install fpdf2 for PDF reports: pip install fpdf2")
                     except Exception as e:
                         st.error(f"Error generating PDF: {e}")
+            else:
                 st.warning("Missing required columns for analysis")
         else:
             st.warning("Missing 'Category Name' column in YCharts export")
