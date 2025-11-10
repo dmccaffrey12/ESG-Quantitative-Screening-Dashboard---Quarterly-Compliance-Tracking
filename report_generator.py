@@ -95,61 +95,68 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
         pdf.cell(0, 8, f'Replace Funds (>50th percentile): {replace} ({replace/total*100:.1f}%)', 0, 1)
     pdf.ln(10)
     
-    # ========== Current Model Holdings in This Category (FULL PAGE) ==========
-    if portfolio_df is not None:
+    # ========== Current Model Holdings in This Category ==========
+    if portfolio_df is not None and len(portfolio_df) > 0:
         pdf.section_title('Current Model Holdings in This Category')
         pdf.set_font('Arial', '', 9)
         
-        # Find holding column
+        # Find holding column - try multiple variations
         holding_col = None
         for col in portfolio_df.columns:
-            if 'holding' in str(col).lower():
+            col_lower = str(col).lower()
+            if 'holding' in col_lower or 'symbol' in col_lower or 'ticker' in col_lower:
                 holding_col = col
                 break
         
-        if holding_col:
-            # Get all holdings across all models
+        if holding_col and 'Symbol' in category_df.columns:
+            # Get all unique holdings from portfolio
             all_holdings = portfolio_df[holding_col].dropna().unique()
             
-            # Filter category_df to only holdings
-            holdings_in_category = category_df[category_df['Symbol'].isin(all_holdings)].copy()
+            # Filter category_df to only holdings (case-insensitive match)
+            all_holdings_upper = [str(h).upper() for h in all_holdings]
+            category_df_upper = category_df.copy()
+            category_df_upper['Symbol_Upper'] = category_df_upper['Symbol'].str.upper()
+            
+            holdings_in_category = category_df_upper[
+                category_df_upper['Symbol_Upper'].isin(all_holdings_upper)
+            ].copy()
             
             if len(holdings_in_category) > 0:
                 # Sort by percentile (best first)
                 holdings_in_category = holdings_in_category.sort_values('FI ESG Quant Percentile Screen')
                 
-                pdf.cell(0, 6, f'Total holdings in {clean_category}: {len(holdings_in_category)}', 0, 1)
+                pdf.cell(0, 6, f'Total model holdings in {clean_category}: {len(holdings_in_category)}', 0, 1)
                 pdf.ln(3)
                 
                 # Table header
                 pdf.set_font('Arial', 'B', 8)
                 pdf.cell(20, 7, 'Ticker', 1)
-                pdf.cell(65, 7, 'Fund Name', 1)
+                pdf.cell(60, 7, 'Fund Name', 1)
                 pdf.cell(22, 7, 'Percentile', 1)
                 pdf.cell(22, 7, 'Score', 1)
                 pdf.cell(25, 7, 'Status', 1)
-                pdf.cell(26, 7, 'Ranking', 1)
+                pdf.cell(31, 7, 'Category Rank', 1)
                 pdf.ln()
                 
                 # Holdings data
                 pdf.set_font('Arial', '', 7)
                 for idx, (_, row) in enumerate(holdings_in_category.iterrows(), 1):
                     ticker = str(row.get('Symbol', 'N/A'))[:8]
-                    fund_name = str(row.get('Name', 'N/A'))[:30]
+                    fund_name = str(row.get('Name', 'N/A'))[:28]
                     percentile = row.get('FI ESG Quant Percentile Screen', 0)
                     score = row.get('FI ESG Quant Screen Scoring System', 0)
                     status = clean_status_for_pdf(str(row.get('Status', '')))
                     
                     # Calculate rank in category
                     rank = (category_df['FI ESG Quant Percentile Screen'] < percentile).sum() + 1
-                    rank_str = f"#{rank}/{total}"
+                    rank_str = f"#{rank} of {total}"
                     
                     pdf.cell(20, 7, ticker, 1)
-                    pdf.cell(65, 7, fund_name, 1)
+                    pdf.cell(60, 7, fund_name, 1)
                     pdf.cell(22, 7, f"{percentile:.1f}", 1)
                     pdf.cell(22, 7, f"{score:.3f}", 1)
                     pdf.cell(25, 7, status[:12], 1)
-                    pdf.cell(26, 7, rank_str, 1)
+                    pdf.cell(31, 7, rank_str, 1)
                     pdf.ln()
                 
                 pdf.ln(5)
@@ -165,16 +172,24 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
                 replace_holdings = len(holdings_in_category[holdings_in_category['FI ESG Quant Percentile Screen'] > 50])
                 
                 pdf.cell(0, 6, f'  Elite holdings: {elite_holdings} (meets standard)', 0, 1)
-                pdf.cell(0, 6, f'  Review holdings: {review_holdings} (requires IC justification)', 0, 1)
-                pdf.cell(0, 6, f'  Replace holdings: {replace_holdings} (replace at next rebalancing)', 0, 1)
+                if review_holdings > 0:
+                    pdf.cell(0, 6, f'  Review holdings: {review_holdings} (requires IC justification)', 0, 1)
+                if replace_holdings > 0:
+                    pdf.cell(0, 6, f'  Replace holdings: {replace_holdings} (replace at next rebalancing)', 0, 1)
                 
                 avg_percentile = holdings_in_category['FI ESG Quant Percentile Screen'].mean()
                 pdf.ln(3)
                 pdf.cell(0, 6, f'  Average percentile: {avg_percentile:.1f}', 0, 1)
                 
             else:
-                pdf.cell(0, 6, 'No current holdings in this category.', 0, 1)
+                pdf.cell(0, 6, 'No current model holdings found in this category.', 0, 1)
                 pdf.ln(5)
+        else:
+            pdf.cell(0, 6, 'Portfolio data uploaded but could not match holdings.', 0, 1)
+            pdf.ln(5)
+    else:
+        pdf.cell(0, 6, 'No portfolio data provided for this report.', 0, 1)
+        pdf.ln(5)
     
     # ========== Top 10 Universe Funds ==========
     pdf.add_page()
@@ -261,31 +276,26 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
     
     pdf.set_font('Arial', '', 9)
     pdf.multi_cell(0, 6,
-        'Our screening framework evaluates 11 ESG metrics across environmental, social, and governance factors. '
-        'Metrics are weighted based on their materiality to long-term sustainability and climate transition. '
+        'Our screening framework evaluates 11 ESG metrics. '
         '70% weight is given to environmental metrics reflecting their dominant role in financial outcomes.'
     )
     pdf.ln(5)
     
-    # Environmental Metrics (70% of total weight)
+    # Environmental Metrics
     pdf.section_title('Environmental Metrics (70% Total Weight)')
     pdf.set_font('Arial', '', 8)
     
     metrics = [
         ('MSCI ESG Environmental Score - 20%', 
-         'Composite environmental score covering carbon, resources, pollution, and opportunities.'),
-        
+         'Composite environmental score covering carbon, resources, pollution.'),
         ('ESG Score Environmental Weight - 15%', 
-         'Percentage of ESG score from environmental factors. Shows prioritization in fund construction.'),
-        
+         'Percentage of ESG score from environmental factors.'),
         ('Fund WACI (Carbon Intensity) - 20%', 
-         'Emissions per million USD revenue. Key metric for Scope 1&2 and climate transition risk.'),
-        
+         'Emissions per revenue. Key climate transition risk metric.'),
         ('Financed Carbon Emissions - 10%', 
-         'Total carbon emissions financed per million USD invested. Absolute footprint metric.'),
-        
+         'Total emissions financed. Absolute footprint metric.'),
         ('Fossil Fuel Reserves - 15%', 
-         'Percentage in companies with fossil reserves. Identifies stranded asset risk.'),
+         'Percentage in companies with reserves. Stranded asset risk.'),
     ]
     
     for metric, description in metrics:
@@ -296,27 +306,16 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
         pdf.ln(2)
     
     # ESG Quality Metrics
-    pdf.section_title('ESG Quality & Governance Metrics (30% Total Weight)')
+    pdf.section_title('ESG Quality Metrics (30% Total Weight)')
     pdf.set_font('Arial', '', 8)
     
     quality_metrics = [
-        ('MSCI ESG Score - 5%', 
-         'Overall ESG rating. Independent third-party assessment.'),
-        
-        ('Fund ESG Leaders % - 5%', 
-         'Percentage in top-rated ESG companies. Concentration in best-in-class.'),
-        
-        ('MSCI ESG Trend Positive % - 5%', 
-         'Percentage with improving ESG scores. Captures positive momentum.'),
-        
-        ('Fund ESG Laggards % - 3%', 
-         'Percentage in bottom-rated companies. Lower is better.'),
-        
-        ('Controversial Weapons - 1%', 
-         'Exposure to controversial weapons. Zero tolerance approach.'),
-        
-        ('MSCI ESG Governance Score - 1%', 
-         'Board quality, compensation, ownership. Governance risk indicator.'),
+        ('MSCI ESG Score - 5%', 'Overall ESG rating.'),
+        ('Fund ESG Leaders % - 5%', 'Percentage in top-rated companies.'),
+        ('MSCI ESG Trend Positive % - 5%', 'Percentage with improving scores.'),
+        ('Fund ESG Laggards % - 3%', 'Percentage in bottom-rated companies.'),
+        ('Controversial Weapons - 1%', 'Exposure to controversial weapons.'),
+        ('MSCI ESG Governance Score - 1%', 'Board quality and governance.'),
     ]
     
     for metric, description in quality_metrics:
@@ -326,14 +325,13 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
         pdf.multi_cell(0, 5, description)
         pdf.ln(2)
     
-    # ========== Compliance footer ==========
+    # Compliance footer
     pdf.ln(5)
     pdf.set_font('Arial', 'I', 8)
     pdf.multi_cell(0, 5,
-        'This report is generated for internal compliance and due diligence purposes. '
-        'Fund selection is based on quantitative ESG metrics and does not constitute investment advice. '
-        'Category-relative percentiles ensure fair comparison within peer groups. '
-        '"Elite or Replace" philosophy: Only top quartile (<=25th percentile) holdings meet our standard.'
+        'This report is for internal compliance purposes. '
+        'Category-relative percentiles ensure fair comparison. '
+        'Elite or Replace philosophy: Only <=25th percentile meets standard.'
     )
     
     return bytes(pdf.output(dest='S'))
