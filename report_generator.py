@@ -88,16 +88,16 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
             elif 'Replace' in clean:
                 replace += 1
     
-    pdf.cell(0, 8, f'Total Funds Analyzed: {total}', 0, 1)
+    pdf.cell(0, 8, f'Total Funds in Universe: {total}', 0, 1)
     if total > 0:
-        pdf.cell(0, 8, f'Elite Funds (<=25th %ile): {elite} ({elite/total*100:.1f}%)', 0, 1)
-        pdf.cell(0, 8, f'Review Funds (26-50th %ile): {review} ({review/total*100:.1f}%)', 0, 1)
-        pdf.cell(0, 8, f'Replace Funds (>50th %ile): {replace} ({replace/total*100:.1f}%)', 0, 1)
+        pdf.cell(0, 8, f'Elite Funds (<=25th percentile): {elite} ({elite/total*100:.1f}%)', 0, 1)
+        pdf.cell(0, 8, f'Review Funds (26-50th percentile): {review} ({review/total*100:.1f}%)', 0, 1)
+        pdf.cell(0, 8, f'Replace Funds (>50th percentile): {replace} ({replace/total*100:.1f}%)', 0, 1)
     pdf.ln(10)
     
-    # ========== Current Holdings in This Category ==========
+    # ========== Current Model Holdings in This Category (FULL PAGE) ==========
     if portfolio_df is not None:
-        pdf.section_title('Current Portfolio Holdings in This Category')
+        pdf.section_title('Current Model Holdings in This Category')
         pdf.set_font('Arial', '', 9)
         
         # Find holding column
@@ -108,88 +108,114 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
                 break
         
         if holding_col:
-            current_tickers = portfolio_df[holding_col].dropna().unique()
-            holdings_in_category = category_df[category_df['Symbol'].isin(current_tickers)]
+            # Get all holdings across all models
+            all_holdings = portfolio_df[holding_col].dropna().unique()
+            
+            # Filter category_df to only holdings
+            holdings_in_category = category_df[category_df['Symbol'].isin(all_holdings)].copy()
             
             if len(holdings_in_category) > 0:
-                pdf.cell(0, 6, f'You currently hold {len(holdings_in_category)} funds in this category:', 0, 1)
+                # Sort by percentile (best first)
+                holdings_in_category = holdings_in_category.sort_values('FI ESG Quant Percentile Screen')
+                
+                pdf.cell(0, 6, f'Total holdings in {clean_category}: {len(holdings_in_category)}', 0, 1)
                 pdf.ln(3)
                 
                 # Table header
-                pdf.set_font('Arial', 'B', 9)
-                pdf.cell(25, 8, 'Ticker', 1)
-                pdf.cell(70, 8, 'Fund Name', 1)
-                pdf.cell(25, 8, 'Percentile', 1)
-                pdf.cell(30, 8, 'Status', 1)
-                pdf.cell(30, 8, 'Action', 1)
+                pdf.set_font('Arial', 'B', 8)
+                pdf.cell(20, 7, 'Ticker', 1)
+                pdf.cell(65, 7, 'Fund Name', 1)
+                pdf.cell(22, 7, 'Percentile', 1)
+                pdf.cell(22, 7, 'Score', 1)
+                pdf.cell(25, 7, 'Status', 1)
+                pdf.cell(26, 7, 'Ranking', 1)
                 pdf.ln()
                 
                 # Holdings data
-                pdf.set_font('Arial', '', 8)
-                for _, row in holdings_in_category.iterrows():
-                    ticker = str(row.get('Symbol', 'N/A'))[:10]
+                pdf.set_font('Arial', '', 7)
+                for idx, (_, row) in enumerate(holdings_in_category.iterrows(), 1):
+                    ticker = str(row.get('Symbol', 'N/A'))[:8]
                     fund_name = str(row.get('Name', 'N/A'))[:30]
                     percentile = row.get('FI ESG Quant Percentile Screen', 0)
+                    score = row.get('FI ESG Quant Screen Scoring System', 0)
                     status = clean_status_for_pdf(str(row.get('Status', '')))
                     
-                    # Determine action based on new Elite or Replace philosophy
-                    if percentile <= 25:
-                        action = 'Keep (Elite)'
-                    elif percentile <= 50:
-                        action = 'Justify or Replace'
-                    else:
-                        action = 'Replace'
+                    # Calculate rank in category
+                    rank = (category_df['FI ESG Quant Percentile Screen'] < percentile).sum() + 1
+                    rank_str = f"#{rank}/{total}"
                     
-                    pdf.cell(25, 8, ticker, 1)
-                    pdf.cell(70, 8, fund_name, 1)
-                    pdf.cell(25, 8, f"{percentile:.1f}", 1)
-                    pdf.cell(30, 8, status[:15], 1)
-                    pdf.cell(30, 8, action[:20], 1)
+                    pdf.cell(20, 7, ticker, 1)
+                    pdf.cell(65, 7, fund_name, 1)
+                    pdf.cell(22, 7, f"{percentile:.1f}", 1)
+                    pdf.cell(22, 7, f"{score:.3f}", 1)
+                    pdf.cell(25, 7, status[:12], 1)
+                    pdf.cell(26, 7, rank_str, 1)
                     pdf.ln()
                 
                 pdf.ln(5)
+                
+                # Summary of model holdings performance
+                pdf.set_font('Arial', 'B', 10)
+                pdf.cell(0, 6, 'Model Holdings Summary:', 0, 1)
+                pdf.set_font('Arial', '', 9)
+                
+                elite_holdings = len(holdings_in_category[holdings_in_category['FI ESG Quant Percentile Screen'] <= 25])
+                review_holdings = len(holdings_in_category[(holdings_in_category['FI ESG Quant Percentile Screen'] > 25) & 
+                                                          (holdings_in_category['FI ESG Quant Percentile Screen'] <= 50)])
+                replace_holdings = len(holdings_in_category[holdings_in_category['FI ESG Quant Percentile Screen'] > 50])
+                
+                pdf.cell(0, 6, f'  Elite holdings: {elite_holdings} (meets standard)', 0, 1)
+                pdf.cell(0, 6, f'  Review holdings: {review_holdings} (requires IC justification)', 0, 1)
+                pdf.cell(0, 6, f'  Replace holdings: {replace_holdings} (replace at next rebalancing)', 0, 1)
+                
+                avg_percentile = holdings_in_category['FI ESG Quant Percentile Screen'].mean()
+                pdf.ln(3)
+                pdf.cell(0, 6, f'  Average percentile: {avg_percentile:.1f}', 0, 1)
+                
             else:
-                pdf.cell(0, 6, 'No current holdings identified in this category.', 0, 1)
+                pdf.cell(0, 6, 'No current holdings in this category.', 0, 1)
                 pdf.ln(5)
     
     # ========== Top 10 Universe Funds ==========
-    pdf.section_title('Top 10 Available Funds in Universe')
+    pdf.add_page()
+    pdf.section_title('Top 10 Elite Funds in Category Universe')
     pdf.set_font('Arial', '', 9)
     
-    # Mark which are current holdings
-    if portfolio_df is not None and holding_col:
-        current_tickers = portfolio_df[holding_col].dropna().unique()
-    else:
-        current_tickers = []
+    pdf.multi_cell(0, 5, 
+        'The following table shows the top 10 Elite funds available in this category. '
+        'These represent best-in-class ESG performance and are suitable for consideration '
+        'in portfolio construction or as replacements for underperforming holdings.'
+    )
+    pdf.ln(3)
     
     # Table header
     pdf.set_font('Arial', 'B', 9)
     pdf.cell(8, 8, '#', 1)
     pdf.cell(25, 8, 'Ticker', 1)
-    pdf.cell(65, 8, 'Fund Name', 1)
+    pdf.cell(75, 8, 'Fund Name', 1)
     pdf.cell(25, 8, 'Percentile', 1)
     pdf.cell(30, 8, 'Status', 1)
-    pdf.cell(27, 8, 'In Portfolio?', 1)
+    pdf.cell(17, 8, 'Score', 1)
     pdf.ln()
     
     # Top 10 funds
     pdf.set_font('Arial', '', 8)
     for idx, (_, row) in enumerate(category_df.head(10).iterrows(), 1):
         ticker = str(row.get('Symbol', 'N/A'))[:10]
-        fund_name = str(row.get('Name', 'N/A'))[:28]
+        fund_name = str(row.get('Name', 'N/A'))[:35]
         percentile = row.get('FI ESG Quant Percentile Screen', 0)
+        score = row.get('FI ESG Quant Screen Scoring System', 0)
         status = clean_status_for_pdf(str(row.get('Status', '')))
-        in_portfolio = 'YES' if ticker in current_tickers else 'No'
         
         pdf.cell(8, 8, str(idx), 1)
         pdf.cell(25, 8, ticker, 1)
-        pdf.cell(65, 8, fund_name, 1)
+        pdf.cell(75, 8, fund_name, 1)
         pdf.cell(25, 8, f"{percentile:.1f}", 1)
         pdf.cell(30, 8, status[:15], 1)
-        pdf.cell(27, 8, in_portfolio, 1)
+        pdf.cell(17, 8, f"{score:.3f}", 1)
         pdf.ln()
     
-    # ========== PAGE 2: Methodology ==========
+    # ========== PAGE: Methodology ==========
     pdf.add_page()
     pdf.chapter_title('Screening Methodology')
     
@@ -210,14 +236,26 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
     )
     pdf.ln(5)
     
-    pdf.section_title('Qualification Thresholds')
-    pdf.set_font('Arial', '', 9)
-    pdf.cell(0, 6, 'Elite: <= 25th percentile (Top Quartile - Automatic qualification)', 0, 1)
-    pdf.cell(0, 6, 'Review: 26-50th percentile (Requires IC justification)', 0, 1)
-    pdf.cell(0, 6, 'Replace: > 50th percentile (Replace at next rebalancing)', 0, 1)
+    pdf.section_title('Qualification Thresholds (Category-Relative)')
+    pdf.set_font('Arial', 'B', 9)
+    pdf.cell(0, 6, 'Elite: <= 25th percentile', 0, 1)
+    pdf.set_font('Arial', '', 8)
+    pdf.multi_cell(0, 5, '  Top Quartile - Automatic qualification. Best-in-class ESG performance within category.')
+    pdf.ln(2)
+    
+    pdf.set_font('Arial', 'B', 9)
+    pdf.cell(0, 6, 'Review: 26-50th percentile', 0, 1)
+    pdf.set_font('Arial', '', 8)
+    pdf.multi_cell(0, 5, '  Second Quartile - Requires Investment Committee justification. Consider replacement with Elite alternative.')
+    pdf.ln(2)
+    
+    pdf.set_font('Arial', 'B', 9)
+    pdf.cell(0, 6, 'Replace: > 50th percentile', 0, 1)
+    pdf.set_font('Arial', '', 8)
+    pdf.multi_cell(0, 5, '  Bottom Half - Replace at next rebalancing. Insufficient ESG quality.')
     pdf.ln(8)
     
-    # ========== PAGE 3: ESG Metrics Detail ==========
+    # ========== ESG Metrics Detail ==========
     pdf.add_page()
     pdf.chapter_title('ESG Metrics Framework')
     
@@ -294,7 +332,8 @@ def generate_compliance_report(category_df, category_name, quarter, portfolio_df
     pdf.multi_cell(0, 5,
         'This report is generated for internal compliance and due diligence purposes. '
         'Fund selection is based on quantitative ESG metrics and does not constitute investment advice. '
-        'Category-relative percentiles ensure fair comparison within peer groups.'
+        'Category-relative percentiles ensure fair comparison within peer groups. '
+        '"Elite or Replace" philosophy: Only top quartile (<=25th percentile) holdings meet our standard.'
     )
     
     return bytes(pdf.output(dest='S'))
