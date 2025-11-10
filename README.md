@@ -5,9 +5,9 @@ A category-relative, fully-automated ESG compliance platform for RIAs and asset 
 
 ## Features
 - Category-relative percentile ESG ranking—no more “utilities vs. tech” false comparisons
-- Automated IC-ready PDF reports for each category
+- Automated Investment committee-ready PDF reports for each category
 - “Elite or Replace” compliance model with only ≤25th percentile allowed as standard
-- Visual, auditable documentation for SEC/DOL/EU compliance
+- Visual, auditable documentation for general internal compliance standards
 - “Methodology” tab with full rationale, thresholds, and weights
 
 ## Installation
