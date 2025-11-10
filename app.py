@@ -10,6 +10,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# Initialize session state for portfolio data persistence
+if 'portfolio_df' not in st.session_state:
+    st.session_state['portfolio_df'] = None
+
 # Create two tabs: Dashboard and Methodology
 tab1, tab2 = st.tabs(["📊 Screening Dashboard", "📖 Methodology"])
 
@@ -71,27 +75,35 @@ with tab1:
             
             # CRITICAL: Calculate category-relative percentiles
             if 'FI ESG Quant Screen Scoring System' in combined_df.columns and 'Morningstar Category' in combined_df.columns:
-                st.info("🔄 Calculating category-relative percentiles...")
-                
-                def calculate_category_percentile(group):
-                    """Calculate percentile rank within category"""
-                    group['Category_Percentile'] = group['FI ESG Quant Screen Scoring System'].rank(ascending=False, pct=True) * 100
-                    return group
-                
-                combined_df = combined_df.groupby('Morningstar Category', group_keys=False).apply(calculate_category_percentile)
-                combined_df['FI ESG Quant Percentile Screen'] = combined_df['Category_Percentile']
+                with st.spinner("Calculating category-relative percentiles..."):
+                    def calculate_category_percentile(group):
+                        """Calculate percentile rank within category"""
+                        group['Category_Percentile'] = group['FI ESG Quant Screen Scoring System'].rank(ascending=False, pct=True) * 100
+                        return group
+                    
+                    combined_df = combined_df.groupby('Morningstar Category', group_keys=False).apply(calculate_category_percentile)
+                    combined_df['FI ESG Quant Percentile Screen'] = combined_df['Category_Percentile']
                 
                 st.success(f"✅ Loaded {len(combined_df)} funds and calculated category-relative percentiles")
             else:
                 st.warning("⚠️ Could not calculate category percentiles - missing required columns")
                 st.success(f"✅ Loaded {len(combined_df)} funds")
             
+            # Store portfolio data in session if available
+            if portfolio_file is not None:
+                try:
+                    portfolio_data = pd.read_csv(portfolio_file)
+                    st.session_state['portfolio_df'] = portfolio_data
+                except Exception as e:
+                    st.error(f"Error loading portfolio file: {e}")
+                    st.session_state['portfolio_df'] = None
+            
             # Portfolio Comparison
             if portfolio_file:
                 st.header("📊 Portfolio vs. Screening Results")
                 
                 try:
-                    portfolio_df = pd.read_csv(portfolio_file)
+                    portfolio_df = st.session_state["portfolio_df"]
                     
                     st.subheader("Current Holdings Overview")
                     
@@ -272,32 +284,40 @@ with tab1:
                             from report_generator import generate_compliance_report
                             
                             if st.button("📄 Generate Compliance Report (PDF)"):
-                                # Pass portfolio_df to report generator if available
-                                portfolio_data = None
-                                if portfolio_file:
-                                    try:
-                                        portfolio_data = pd.read_csv(portfolio_file)
-                                    except:
-                                        pass
-                                
-                                pdf_bytes = generate_compliance_report(
-                                    category_df, 
-                                    selected_category, 
-                                    quarter,
-                                    portfolio_df=portfolio_data
-                                )
-                                
-                                st.download_button(
-                                    label="Download Enhanced PDF Report",
-                                    data=pdf_bytes,
-                                    file_name=f"ESG_Screening_{selected_category.replace('/', '_')}_{quarter}.pdf",
-                                    mime="application/pdf"
-                                )
-                                st.success("✅ PDF generated with portfolio holdings analysis!")
+                                with st.spinner("Generating PDF report..."):
+                                    # Get portfolio data from session state first, then portfolio_file
+                                    portfolio_data = None
+                                    
+                                    # Try session state first
+                                    if st.session_state['portfolio_df'] is not None:
+                                        portfolio_data = st.session_state['portfolio_df']
+                                    # Fall back to portfolio_file
+                                    elif portfolio_file is not None:
+                                        try:
+                                            portfolio_data = pd.read_csv(portfolio_file)
+                                        except Exception as e:
+                                            st.warning(f"Could not read portfolio file: {e}")
+                                    
+                                    pdf_bytes = generate_compliance_report(
+                                        category_df, 
+                                        selected_category, 
+                                        quarter,
+                                        portfolio_df=portfolio_data
+                                    )
+                                    
+                                    st.download_button(
+                                        label="Download Enhanced PDF Report",
+                                        data=pdf_bytes,
+                                        file_name=f"ESG_Screening_{selected_category.replace('/', '_')}_{quarter}.pdf",
+                                        mime="application/pdf"
+                                    )
+                                st.success("✅ PDF generated successfully!")
                         except ImportError:
                             st.info("Install fpdf2 for PDF reports: pip install fpdf2")
                         except Exception as e:
                             st.error(f"Error generating PDF: {e}")
+                            import traceback
+                            st.code(traceback.format_exc())
                 else:
                     st.warning("Missing required columns for analysis")
             else:
