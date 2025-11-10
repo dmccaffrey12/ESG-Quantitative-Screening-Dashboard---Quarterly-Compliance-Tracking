@@ -1,32 +1,37 @@
-# ESG Metric Weights Configuration
-# These weights must sum to 1.0 for proper scoring
+"""
+ESG Quantitative Screening Configuration
+Defines metric weights and qualification thresholds
+"""
 
+# ESG Metric Weights (must sum to 1.0)
 METRIC_WEIGHTS = {
-    'MSCI_ESG_Environmental_Score': 0.20,
-    'ESG_Score_Environmental_Weight_%': 0.15,
-    'Fund_WACI': 0.20,
-    'Financed_Carbon_Emissions': 0.10,
-    'Fossil_Fuel_Reserves_%': 0.15,
-    'MSCI_ESG_Score': 0.05,
-    'Fund_ESG_Leaders_%': 0.05,
-    'MSCI_Fund_ESG_Trend_Positive_%': 0.05,
-    'Fund_ESG_Laggard_%': 0.03,
-    'Controversial_Weapons_%': 0.01,
-    'MSCI_ESG_Governance_Score': 0.01,
+    # Environmental Metrics (70% total weight)
+    'MSCI ESG Environmental Score': 0.20,
+    'ESG Score Environmental Weight (%)': 0.15,
+    'Fund Weighted Average Carbon Intensity': 0.20,
+    'Financed Carbon Emissions (Carbon Emissions / USD Million Invested)': 0.10,
+    'Fossil Fuels Reserve (%)': 0.15,
+    
+    # ESG Quality & Governance Metrics (30% total weight)
+    'MSCI ESG Score': 0.05,
+    'Fund ESG Leaders (%)': 0.05,
+    'MSCI Fund ESG Trend Positive (%)': 0.05,
+    'Fund ESG Laggards (%)': 0.03,
+    'Controversial Weapons Involvement (%)': 0.01,
+    'MSCI ESG Governance Score': 0.01,
 }
 
-# Qualification Thresholds
-# Funds ranked by percentile within Morningstar Category
+# Percentile Thresholds (Category-Relative)
+# Philosophy: "Elite or Replace" - Only hold top quartile ESG funds
 PERCENTILE_THRESHOLDS = {
-    'elite': 25,              # Top quartile - auto-qualify for core
-    'qualified': 37,          # Extended top tier
-    'watchlist': 74,          # Median - monitor closely
-    'review': 110,            # Below median - replace if core holding
+    'elite': 25,        # <= 25th percentile: Automatic qualification (Top Quartile)
+    'review': 50,       # 26-50th percentile: Needs justification, consider replacement
+    'replace': 100,     # > 50th percentile: Bottom half, replace at next rebalance
 }
 
-# YCharts Column Name Mapping (adjust based on your exports)
-COLUMN_MAPPING = {
-    'Symbol': 'Ticker',
-    'Fund Name': 'Name',
-    'Morningstar Category': 'Category',
+# Threshold Descriptions (for documentation)
+THRESHOLD_DESCRIPTIONS = {
+    'elite': 'Top Quartile - Automatic qualification. Best-in-class ESG performance.',
+    'review': 'Second Quartile - Requires IC justification. Consider replacement with Elite alternative.',
+    'replace': 'Bottom Half - Replace at next rebalancing. Insufficient ESG quality.',
 }
