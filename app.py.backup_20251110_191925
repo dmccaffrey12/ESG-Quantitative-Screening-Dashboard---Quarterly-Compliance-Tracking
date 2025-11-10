@@ -270,37 +270,17 @@ if uploaded_files:
                     try:
                         from report_generator import generate_compliance_report
                         
-                with col2:
-                    try:
-                        from report_generator import generate_compliance_report
-                        
                         if st.button("📄 Generate Compliance Report (PDF)"):
-                            # Pass portfolio_df to report generator if available
-                            portfolio_data = None
-                            if portfolio_file:
-                                try:
-                                    portfolio_data = pd.read_csv(portfolio_file)
-                                except:
-                                    pass
-                            
-                            pdf_bytes = generate_compliance_report(
-                                category_df, 
-                                selected_category, 
-                                quarter,
-                                portfolio_df=portfolio_data
-                            )
-                            
+                            pdf_bytes = generate_compliance_report(category_df, selected_category, quarter)
                             st.download_button(
-                                label="Download Enhanced PDF Report",
+                                label="Download PDF Report",
                                 data=pdf_bytes,
                                 file_name=f"ESG_Screening_{selected_category.replace('/', '_')}_{quarter}.pdf",
                                 mime="application/pdf"
                             )
-                            st.success("✅ PDF generated with portfolio holdings analysis!")
                     except ImportError:
                         st.info("Install fpdf2 for PDF reports: pip install fpdf2")
-                    except Exception as e:
-                        st.error(f"Error generating PDF: {e}")
+            else:
                 st.warning("Missing required columns for analysis")
         else:
             st.warning("Missing 'Category Name' column in YCharts export")
