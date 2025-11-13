@@ -353,27 +353,92 @@ with tab2:
     st.markdown("---")
     
     # Philosophy section
-    st.header("🎯 Our Philosophy: 'Elite or Replace'")
+    st.header("🎯 Our Philosophy: ESG-First Portfolio Construction")
     
     st.markdown("""
-    Our ESG screening adopts a strict **"Elite or Replace"** standard. In well-populated 
-    categories (e.g., Large Blend, Foreign Large Value), there are typically 20-50 Elite 
-    funds available. With sufficient options in the top quartile, holding anything below 
-    the 25th percentile requires extraordinary justification.
+    We employ a quantitative, **ESG-first investment philosophy** across our ESG-focused models. 
+    This means environmental, social, and governance integration isn't an overlay—it's the 
+    foundational screening criterion. We define investment-grade ESG holdings as those demonstrating 
+    measurable, category-relative excellence in ESG metrics, climate positioning, and governance quality.
     
-    ### Why This Approach?
+    **Climate-related factors are central to our long-term ESG strategy.** As companies globally 
+    face regulatory, operational, and transition risks tied to climate change, climate positioning 
+    has become a consistent and material theme across ESG and socially responsible investing frameworks. 
+    We believe thoughtful elevation of climate-related effectiveness at the company level—reflected 
+    in lower carbon intensity, renewable transition progress, and climate governance quality—is 
+    essential to building resilient, future-ready portfolios. By weighting environmental factors 
+    at 70% of our screening criteria, we ensure our framework captures this critical dimension 
+    of long-term company value and portfolio stability.
+    """)
     
-    **1. Defensible Standard**  
-    "We only hold top quartile ESG funds" is a clear, binary statement for clients and regulators.
+    st.markdown("---")
     
-    **2. Abundant Options**  
-    Most categories have 15+ Elite funds, providing sufficient diversification.
+    # Category-Relative ESG Assessment Framework
+    st.header("Our Category-Relative ESG Assessment Framework")
     
-    **3. Avoids "Good Enough" Trap**  
-    Without strict standards, portfolios drift toward mediocre ESG performance.
+    st.markdown("""
+    For our ESG models, we use a **category-relative ESG assessment**—a systematic framework that 
+    transparently evaluates all fund holdings against standardized, peer-group-based ESG criteria. 
+    This framework serves as both a **research tool and a governance mechanism**, allowing us to 
+    see precisely where each holding stands relative to its peers and to make deliberate, documented 
+    decisions about any holdings that fall below our benchmark.
     
-    **4. Simplifies IC Discussion**  
-    Elite = automatic qualification. Anything else = justify or replace.
+    More importantly, this framework is **antifragile**: it provides a consistent, auditable process 
+    we can reference whenever circumstances change—such as when a fund materially shifts its ESG 
+    mandate or commitment. Rather than making ad-hoc decisions, we can transparently assess 
+    whether the fund still meets our ESG criteria and climate positioning standards, and document 
+    the rationale for any decision to hold, monitor, or replace it.
+    
+    **How It Works:**
+    
+    Funds are ranked within their Morningstar peer category on 11 quantitative ESG metrics 
+    (70% environmental focus, 30% quality & governance). This produces three transparent tiers:
+    
+    - **ESG Leadership Tier (≤25th percentile):** Top-quartile ESG integration and climate positioning. 
+      Default holding status.
+    - **ESG Core Tier (26-50th percentile):** Solid ESG integration. Held with explicit IC documentation 
+      of the non-ESG rationale (e.g., performance contribution, strategic positioning).
+    - **ESG Evaluation Tier (>50th percentile):** Below our benchmark. Requires compelling strategic 
+      justification to hold; typically flagged for replacement at next rebalance.
+    """)
+    
+    st.markdown("---")
+    
+    # What This Framework Reveals
+    st.header("What This Framework Reveals")
+    
+    st.markdown("""
+    This systematic lens shows us:
+    
+    - **Superior climate positioning:** Lower carbon intensity, renewable transition progress, 
+      climate governance quality, and resilience to climate-related risks
+    - **Material ESG governance:** Active proxy voting, compensation linked to ESG outcomes, 
+      supply chain accountability
+    - **Quantifiable ESG leadership:** Measurable improvement in ESG metrics, not static scores
+    """)
+    
+    st.markdown("---")
+    
+    # Why This Approach
+    st.header("Why This Approach?")
+    
+    st.markdown("""
+    **1. ESG Materiality, Not Marketing**  
+    We invest only in funds demonstrating top-quartile ESG integration—a concrete, measurable 
+    standard, not a vague commitment to "responsible investing." Clients and regulators see 
+    exactly which funds qualified, which didn't, and why.
+    
+    **2. Climate as Long-Term Portfolio Resilience**  
+    ESG Leadership-tier funds typically demonstrate stronger climate positioning and governance. 
+    Our 70% environmental weighting reflects the material reality that climate-related factors 
+    are central to long-term company resilience and portfolio stability. This ensures our 
+    selections are positioned for a climate-aware future.
+    
+    **3. Consistent Governance with Built-In Resilience**  
+    ESG Leadership → automatic approval. ESG Core → requires IC justification with documented 
+    strategic rationale. ESG Evaluation → replacement trigger. This creates a clear, repeatable 
+    process—one we can reliably apply whether evaluating new funds, monitoring existing holdings, 
+    or responding to material changes in a fund's climate positioning or ESG mandate.
     """)
     
     st.markdown("---")
@@ -384,34 +449,35 @@ with tab2:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("✅ Elite", "≤ 25th %ile")
+        st.metric("✅ ESG Leadership", "≤ 25th %ile")
         st.caption("**Top Quartile**")
-        st.caption("Automatic qualification. Best-in-class ESG performance within category.")
+        st.caption("Automatic qualification. Top-quartile climate positioning and ESG integration within category.")
     
     with col2:
-        st.metric("⚠️ Review", "26-50th %ile")
+        st.metric("⚠️ ESG Core", "26-50th %ile")
         st.caption("**Second Quartile**")
-        st.caption("Requires IC justification. Consider replacement with Elite alternative.")
+        st.caption("Requires IC justification. Solid ESG integration, but held for non-ESG strategic reasons.")
     
     with col3:
-        st.metric("❌ Replace", "> 50th %ile")
-        st.caption("**Bottom Half**")
-        st.caption("Replace at next rebalancing. Insufficient ESG quality.")
+        st.metric("❌ ESG Evaluation", "> 50th %ile")
+        st.caption("**Below Benchmark**")
+        st.caption("Below our climate and ESG standards. Typically flagged for replacement.")
     
     st.markdown("---")
     
-    # When we hold non-elite funds
-    st.header("🤔 When We Hold Non-Elite Funds")
+    # When we hold non-leadership funds
+    st.header("🤔 When We Hold Non-ESG-Leadership Funds")
     
     st.markdown("""
-    Rarely, we may hold a fund in the 26th-50th percentile if:
+    We may hold funds in the ESG Core or ESG Evaluation tiers with explicit IC approval when:
     
-    - **Limited Elite Options**: Category has <10 Elite funds (e.g., Infrastructure)
-    - **Unique Exposure**: Specific climate transition theme not available in Elite tier
-    - **Transition Period**: Recent ESG deterioration, replacement planned next quarter
-    - **Operational Constraints**: Cost/liquidity issues prevent immediate replacement
+    - **Limited ESG Leadership Options:** Category has fewer than 10 ESG Leadership funds (e.g., Infrastructure)
+    - **Unique Strategic Exposure:** Fund offers specific climate transition positioning not available in ESG Leadership tier
+    - **Performance Contribution:** Fund materially contributes to portfolio goals and cost of replacement outweighs ESG upgrade benefit
+    - **Transition Period:** Recent ESG deterioration with planned replacement at next rebalance
+    - **Operational Constraints:** Cost/liquidity issues prevent immediate replacement
     
-    **All exceptions require Investment Committee approval and quarterly re-evaluation.**
+    **All exceptions require Investment Committee approval, documented rationale, and quarterly re-evaluation against our framework.**
     """)
     
     st.markdown("---")
@@ -453,8 +519,9 @@ with tab2:
     
     st.markdown("""
     **Why 70% Environmental Weight?**  
-    Climate transition is the dominant ESG factor for long-term returns. Funds positioned for a 
-    low-carbon economy should outperform as regulatory pressure increases and carbon pricing expands.
+    Climate transition is central to long-term company resilience and portfolio stability. 
+    Our environmental weighting reflects the material reality that climate-related factors 
+    increasingly impact corporate value and strategic positioning.
     """)
     
     st.markdown("---")
@@ -517,10 +584,10 @@ with tab2:
     **Example:**
     | Fund Type | Global %ile | Category %ile | Our Classification |
     |-----------|-------------|---------------|--------------------|
-    | Utility | 87th | 10th (utilities) | ✅ **Elite** |
-    | Tech | 12th | 67th (tech) | ❌ **Replace** |
+    | Utility | 87th | 10th (utilities) | ✅ **ESG Leadership** |
+    | Tech | 12th | 67th (tech) | ❌ **ESG Evaluation** |
     
-    The utility fund is Elite **for its sector**. Fair comparison!
+    The utility fund is an ESG Leader **for its sector**. Fair comparison!
     """)
     
     st.markdown("---")
@@ -533,11 +600,11 @@ with tab2:
     
     1. **Export from YCharts**: All ESG metrics + Category
     2. **Calculate Percentiles**: Automated ranking within each category
-    3. **Review Holdings**: Dashboard identifies Elite/Review/Replace funds
-    4. **IC Decision**: Approve Elite, justify Review tier, replace bottom half
+    3. **Review Holdings**: Dashboard identifies ESG Leadership/Core/Evaluation tiers
+    4. **IC Decision**: Approve ESG Leadership, justify Core tier, replace Evaluation tier
     5. **Document**: PDF compliance reports for each category
     6. **Archive**: Save quarterly CSVs for audit trail
     """)
 
 st.markdown("---")
-st.caption(f"ESG Screening Dashboard | Elite or Replace Philosophy | Category-Relative Rankings")
+st.caption(f"ESG Screening Dashboard | Category-Relative ESG Assessment Framework | Climate-Focused")
